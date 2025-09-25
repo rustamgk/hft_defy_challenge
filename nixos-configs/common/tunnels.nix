@@ -56,9 +56,8 @@ in {
       matchConfig.Name = "ipip0";
       networkConfig = {
         Address = tunnel_ips.ipip;
-        IPForward = true;
       };
-      routeConfig = [
+      routes = [
         {
           Destination = "${remote_ips.ipip}/32";
           Gateway = remote_ips.ipip;
@@ -83,9 +82,8 @@ in {
       matchConfig.Name = "gre0";
       networkConfig = {
         Address = tunnel_ips.gre;
-        IPForward = true;
       };
-      routeConfig = [
+      routes = [
         {
           Destination = "${remote_ips.gre}/32";
           Gateway = remote_ips.gre;
@@ -117,7 +115,7 @@ in {
   # Additional routing for tunnel forwarding (server1 only)
   systemd.network.networks."tunnel-forwarding" = lib.mkIf isServer1 {
     matchConfig.Name = "gre0";
-    routeConfig = [
+    routes = [
       # Route to Wireguard network via GRE tunnel for forwarding testing
       {
         Destination = wireguard_network;

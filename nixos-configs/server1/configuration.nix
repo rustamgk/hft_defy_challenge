@@ -17,7 +17,6 @@
     matchConfig.Name = "eth0";
     networkConfig = {
       DHCP = "yes";
-      IPForward = true;
     };
     dhcpV4Config = {
       UseRoutes = true;
@@ -30,9 +29,10 @@
     matchConfig.Name = "ens10";  # Hetzner private network interface
     networkConfig = {
       Address = "10.0.0.10/24";
-      IPForward = true;
     };
   };
+
+
 
   # Enhanced forwarding configuration for server1
   boot.kernel.sysctl = {
