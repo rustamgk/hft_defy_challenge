@@ -1,3 +1,5 @@
+# /tmp/my-hetzner-vm/hardware-configuration.nix
+
 { config, lib, pkgs, modulesPath, ... }:
 
 {

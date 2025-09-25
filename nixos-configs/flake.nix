@@ -19,6 +19,7 @@
           system = "x86_64-linux";
           modules = [
             disko.nixosModules.disko
+            ./server1/hardware-configuration.nix
             ./server1/disko.nix
             ./server1/configuration.nix
             ./common/base.nix
@@ -44,6 +45,7 @@
           system = "x86_64-linux";
           modules = [
             disko.nixosModules.disko
+            ./server2/hardware-configuration.nix
             ./server2/disko.nix
             ./server2/configuration.nix
             ./common/base.nix

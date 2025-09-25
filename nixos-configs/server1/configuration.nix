@@ -5,6 +5,8 @@
 
 {
   imports = [
+    ./hardware-configuration.nix
+    ./disko.nix
     # Common configurations are imported via flake.nix
   ];
 
@@ -131,6 +133,5 @@
   users.users.testuser.openssh.authorizedKeys.keyFiles = [
     # Will be populated with the SSH public key  
   ];
-
 
 }
