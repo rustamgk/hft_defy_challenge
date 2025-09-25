@@ -118,29 +118,7 @@
     '';
   };
 
-  # Performance monitoring specific to forwarding server
-  systemd.services."forwarding-monitor" = {
-    description = "Monitor tunnel forwarding performance";
-    after = [ "tunnel-forwarding-setup.service" ];
-    wantedBy = [ "multi-user.target" ];
-    
-    serviceConfig = {
-      Type = "simple";
-      Restart = "always";
-      RestartSec = 30;
-    };
-    
-    script = ''
-      while true; do
-        echo "$(date): Tunnel interface status" >> /var/log/tunnel-status.log
-        ${pkgs.iproute2}/bin/ip addr show ipip0 >> /var/log/tunnel-status.log 2>&1 || true
-        ${pkgs.iproute2}/bin/ip addr show gre0 >> /var/log/tunnel-status.log 2>&1 || true
-        ${pkgs.iproute2}/bin/ip addr show wg0 >> /var/log/tunnel-status.log 2>&1 || true
-        echo "---" >> /var/log/tunnel-status.log
-        sleep 60
-      done
-    '';
-  };
+
 
   # SSH keys for server1
   users.users.root.openssh.authorizedKeys.keyFiles = [ 
@@ -151,11 +129,5 @@
     # Will be populated with the SSH public key  
   ];
 
-  # Additional packages for forwarding server
-  environment.systemPackages = with pkgs; [
-    tcpflow
-    conntrack-tools
-    bridge-utils
-    ethtool
-  ];
+
 }
