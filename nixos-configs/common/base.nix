@@ -18,10 +18,7 @@
 
   # Boot configuration
   boot = {
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
+    # Bootloader configuration is handled per-server
     
     # Kernel modules needed for tunneling
     kernelModules = [

@@ -8,6 +8,9 @@
     # Common configurations are imported via flake.nix
   ];
 
+  # Boot loader configuration
+  boot.loader.grub.enable = true;
+
   # Hostname and networking
   networking.hostName = "server1";
   networking.hostId = "12345678";
