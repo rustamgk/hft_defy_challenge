@@ -4,7 +4,7 @@
 { config, pkgs, lib, ... }:
 
 let
-  # Server IP addresses (private network)
+  # Server IP addresses (private network for lower latency)
   server1_ip = "10.0.0.10";
   server2_ip = "10.0.0.20";
   
@@ -19,9 +19,9 @@ let
   
   # IP assignments based on server
   tunnel_ips = {
-    ipip = if isServer1 then "192.168.1.1/24" else "192.168.1.2/24";
-    gre = if isServer1 then "192.168.2.1/24" else "192.168.2.2/24";
-    wireguard = if isServer1 then "192.168.3.1/24" else "192.168.3.2/24";
+    ipip = if isServer1 then "192.168.1.1" else "192.168.1.2";
+    gre = if isServer1 then "192.168.2.1" else "192.168.2.2";
+    wireguard = if isServer1 then "192.168.3.1" else "192.168.3.2";
   };
   
   # Remote tunnel IPs for routing
@@ -35,66 +35,9 @@ let
   remote_server_ip = if isServer1 then server2_ip else server1_ip;
 
 in {
-  # Systemd-networkd configuration for tunnels
-  systemd.network = {
-    enable = true;
-    
-    # IPIP Tunnel Configuration
-    netdevs."ipip-tunnel" = {
-      netdevConfig = {
-        Kind = "ipip";
-        Name = "ipip0";
-      };
-      tunnelConfig = {
-        Local = if isServer1 then server1_ip else server2_ip;
-        Remote = remote_server_ip;
-        TTL = 64;
-      };
-    };
-    
-    networks."ipip-tunnel" = {
-      matchConfig.Name = "ipip0";
-      networkConfig = {
-        Address = tunnel_ips.ipip;
-      };
-      routes = [
-        {
-          Destination = "${remote_ips.ipip}/32";
-          Gateway = remote_ips.ipip;
-        }
-      ];
-    };
-    
-    # GRE Tunnel Configuration  
-    netdevs."gre-tunnel" = {
-      netdevConfig = {
-        Kind = "gre";
-        Name = "gre0";
-      };
-      tunnelConfig = {
-        Local = if isServer1 then server1_ip else server2_ip;
-        Remote = remote_server_ip;
-        TTL = 64;
-      };
-    };
-    
-    networks."gre-tunnel" = {
-      matchConfig.Name = "gre0";
-      networkConfig = {
-        Address = tunnel_ips.gre;
-      };
-      routes = [
-        {
-          Destination = "${remote_ips.gre}/32";
-          Gateway = remote_ips.gre;
-        }
-      ];
-    };
-  };
-  
   # Wireguard configuration (using NixOS wireguard module)
   networking.wireguard.interfaces.wg0 = {
-    ips = [ tunnel_ips.wireguard ];
+    ips = [ "${tunnel_ips.wireguard}/24" ];
     listenPort = 51820;
     
     # Private key will be generated per-server
@@ -102,32 +45,20 @@ in {
     
     peers = [
       {
-        # Peer configuration (other server)
-        # Public key will be set per-server in specific configs
-        publicKey = ""; # Will be overridden in server-specific configs
-        allowedIPs = [ "${remote_ips.wireguard}/32" ];
+        # Peer configuration will be set in server-specific configs
+        publicKey = "PLACEHOLDER_PUBLIC_KEY";
+        allowedIPs = [ "192.168.3.0/24" ];
         endpoint = "${remote_server_ip}:51820";
         persistentKeepalive = 25;
       }
     ];
   };
   
-  # Additional routing for tunnel forwarding (server1 only)
-  systemd.network.networks."tunnel-forwarding" = lib.mkIf isServer1 {
-    matchConfig.Name = "gre0";
-    routes = [
-      # Route to Wireguard network via GRE tunnel for forwarding testing
-      {
-        Destination = wireguard_network;
-        Gateway = remote_ips.gre;
-      }
-    ];
-  };
-  
-  # Ensure tunnel interfaces are brought up
+  # Create tunnel interfaces using systemd services (simpler than systemd-networkd)
   systemd.services."setup-tunnel-interfaces" = {
     description = "Setup tunnel interfaces";
-    after = [ "network.target" "systemd-networkd.service" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     
     serviceConfig = {
@@ -137,19 +68,38 @@ in {
     
     script = ''
       # Wait for network to be ready
-      sleep 5
+      sleep 10
       
-      # Ensure tunnel interfaces are up
+      echo "Setting up tunnel interfaces..."
+      
+      # Create IPIP tunnel
+      ${pkgs.iproute2}/bin/ip tunnel add ipip0 mode ipip \
+        remote ${remote_server_ip} \
+        local ${if isServer1 then server1_ip else server2_ip} \
+        ttl 64 || true
+      
+      ${pkgs.iproute2}/bin/ip addr add ${tunnel_ips.ipip}/24 dev ipip0 || true
       ${pkgs.iproute2}/bin/ip link set ipip0 up || true
+      
+      # Create GRE tunnel  
+      ${pkgs.iproute2}/bin/ip tunnel add gre0 mode gre \
+        remote ${remote_server_ip} \
+        local ${if isServer1 then server1_ip else server2_ip} \
+        ttl 64 || true
+        
+      ${pkgs.iproute2}/bin/ip addr add ${tunnel_ips.gre}/24 dev gre0 || true
       ${pkgs.iproute2}/bin/ip link set gre0 up || true
-      ${pkgs.iproute2}/bin/ip link set wg0 up || true
       
-      # Add routes if they don't exist
-      ${pkgs.iproute2}/bin/ip route add ${remote_ips.ipip}/32 dev ipip0 || true
-      ${pkgs.iproute2}/bin/ip route add ${remote_ips.gre}/32 dev gre0 || true
-      ${pkgs.iproute2}/bin/ip route add ${remote_ips.wireguard}/32 dev wg0 || true
-      
-      echo "Tunnel interfaces configured"
+      echo "Tunnel interfaces configured:"
+      ${pkgs.iproute2}/bin/ip addr show ipip0 || true
+      ${pkgs.iproute2}/bin/ip addr show gre0 || true
+      ${pkgs.iproute2}/bin/ip addr show wg0 || true
+    '';
+    
+    preStop = ''
+      # Cleanup tunnels on stop
+      ${pkgs.iproute2}/bin/ip link delete ipip0 || true
+      ${pkgs.iproute2}/bin/ip link delete gre0 || true
     '';
   };
   
@@ -171,8 +121,41 @@ in {
         chmod 600 /etc/wireguard/private.key
         ${pkgs.wireguard-tools}/bin/wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
         chmod 644 /etc/wireguard/public.key
-        echo "Generated Wireguard keys"
+        echo "Generated Wireguard keys for $(hostname)"
+        echo "Public key: $(cat /etc/wireguard/public.key)"
       fi
+    '';
+  };
+  
+  # Performance testing service
+  systemd.services."tunnel-performance-test" = {
+    description = "Tunnel Performance Test Helper";
+    after = [ "setup-tunnel-interfaces.service" "wireguard-wg0.service" ];
+    
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    
+    script = ''
+      echo "Tunnel Performance Test Environment Ready"
+      echo "========================================="
+      echo "IPIP Tunnel: ${tunnel_ips.ipip}/24"
+      echo "GRE Tunnel:  ${tunnel_ips.gre}/24"
+      echo "WG Tunnel:   ${tunnel_ips.wireguard}/24"
+      echo ""
+      echo "Test commands:"
+      echo "# Test IPIP latency:"
+      echo "ping -c 10 ${if isServer1 then "192.168.1.2" else "192.168.1.1"}"
+      echo "# Test GRE latency:"  
+      echo "ping -c 10 ${if isServer1 then "192.168.2.2" else "192.168.2.1"}"
+      echo "# Test Wireguard latency:"
+      echo "ping -c 10 ${if isServer1 then "192.168.3.2" else "192.168.3.1"}"
+      echo ""
+      echo "# Run iperf3 server (on one machine):"
+      echo "iperf3 -s -B ${tunnel_ips.ipip}"
+      echo "# Run iperf3 client (on other machine):"
+      echo "iperf3 -c ${if isServer1 then "192.168.1.2" else "192.168.1.1"} -t 60"
     '';
   };
 }

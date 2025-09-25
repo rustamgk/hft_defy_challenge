@@ -1,12 +1,4 @@
 #!/bin/bash
-
-# Direct nixos-anywhere deecho ""
-echo "📡 Deploying to Server1 (forwarding node)..."
-nix run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server1 --target-host root@$SERVER1_IP
-
-echo ""
-echo "📡 Deploying to Server2 (testing node)..." 
-nix run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server2 --target-host root@$SERVER2_IPt to existing Hetzner servers
 # Usage: ./deploy.sh
 
 set -e
@@ -45,11 +37,10 @@ echo "🚀 Starting NixOS deployment..."
 
 echo ""
 echo "📡 Deploying to Server1 (forwarding node)..."
-nix --extra-experimental-features 'nix-command flakes' run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server1 --target-host root@91.98.144.4 --build-on-remote -i ~/.ssh/hft_defy
-
+nix --extra-experimental-features 'nix-command flakes' run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server1 --target-host root@91.98.144.4 --build-on remote -i ~/.ssh/hft_defy
 echo ""
 echo "📡 Deploying to Server2 (testing node)..." 
-nix --extra-experimental-features 'nix-command flakes' run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server2 --target-host root@91.98.95.57 --build-on-remote -i ~/.ssh/hft_defy
+nix --extra-experimental-features 'nix-command flakes' run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server2 --target-host root@91.98.95.57 --build-on remote -i ~/.ssh/hft_defy
 
 echo " Test tunnel connectivity:"
 echo " ssh -i ~/.ssh/hft_defy root@$SERVER2_IP 'ping -c 3 192.168.1.1'"
