@@ -10,6 +10,8 @@
 
   # Boot loader configuration
   boot.loader.grub.enable = true;
+  boot.loader.grub.efiSupport = true;
+  boot.loader.grub.efiInstallAsRemovable = true;
 
   # Hostname and networking
   networking.hostName = "server1";
@@ -34,8 +36,6 @@
       Address = "10.0.0.10/24";
     };
   };
-
-
 
   # Enhanced forwarding configuration for server1
   boot.kernel.sysctl = {
