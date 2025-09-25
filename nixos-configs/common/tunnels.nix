@@ -4,9 +4,9 @@
 { config, pkgs, lib, ... }:
 
 let
-  # Server IP addresses (private network for lower latency)
-  server1_ip = "10.0.0.10";
-  server2_ip = "10.0.0.20";
+  # Server IP addresses (actual Hetzner-assigned private network IPs)
+  server1_ip = "10.0.0.2";
+  server2_ip = "10.0.0.3";
   
   # Tunnel network ranges
   ipip_network = "192.168.1.0/24";

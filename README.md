@@ -1,56 +1,199 @@
-# HFT DeFy Challenge 
+# HFT DEFY Challenge - Tunnel Performance Test Results
 
-* Поднять две машины с NixOS на Hetzner в одной сети (нужна почта для инвайта в проект, где можно будет работать);
-* Поднять три типа тоннелей между ними по локальной сети - IPIP, GRE, Wireguard (через никсос-конфиг с networking.useNetworkd = true;);
-* Померять throughput и latency TCP по всем каналам — посчитать:
-  * Среднюю скорость передачи, + по интервалам 1сек— медиану и 90ую персентиль;
-  * RTT пингом: среднюю, медиану и 90ую персентиль.
-* Настроить форвардинг между всеми тоннелями на одном из серверов, на втором померять средний RTT из GRE в Wireguard через этот форвардинг.
+## Test Environment
 
-Simple manual network performance testing setup using NixOS on Hetzner Cloud with multiple tunnel types.
+- **Date**: September 25, 2025
+- **Server1**: 91.98.144.4 (Forwarding node)
+- **Server2**: 91.98.95.57 (Testing client)
+- **Private Network**: 10.0.0.0/24
+  - Server1 Private IP: 10.0.0.2
+  - Server2 Private IP: 10.0.0.3
 
-## Task Implementation
+## Tunnel Configuration
 
-This project implements the complete task requirements with a manual approach:
+### Network Assignments
+- **IPIP Tunnel**: 192.168.1.0/24
+  - Server1: 192.168.1.1
+  - Server2: 192.168.1.2
+- **GRE Tunnel**: 192.168.2.0/24
+  - Server1: 192.168.2.1
+  - Server2: 192.168.2.2
+- **Wireguard Tunnel**: 192.168.3.0/24
+  - Server1: 192.168.3.1
+  - Server.2: 192.168.3.2
 
-### **Infrastructure Setup**
-- **Two NixOS machines** on Hetzner Cloud
-- **Manual deployment** - create servers through Hetzner Cloud console
-- **Provisioning** - use the module from nixos-anywhere
+## Connectivity Tests
 
-### **Tunnel Configuration**  
-Three tunnel types configured using `networking.useNetworkd = true`:
-- **IPIP tunnel**: 192.168.1.0/24 network
-- **GRE tunnel**: 192.168.2.0/24 network  
-- **Wireguard tunnel**: 192.168.3.0/24 network
+### Basic Tunnel Connectivity
+```
+# IPIP Tunnel
+✅ WORKING: 3 packets transmitted, 3 received, 0% packet loss
 
-### **Performance Measurements**
-**TCP Throughput Testing**:
-- Simple iperf3 tests for each tunnel (maybe other tools we'll see)
-- Manual result collection from console output 
+# GRE Tunnel  
+❌ ISSUE: Connection hanging/timeout
 
-**RTT Latency Testing**:
-- Basic ping tests with 10-20 samples per tunnel
-- Manual recording of avg RTT values
-
-### **Network Topology**
-
-Hetzner Private Network (10.0.0.0/24)
-├── Server1 (10.0.0.10) - Forwarding Node
-│   ├── IPIP: 192.168.1.1/24
-│   ├── GRE: 192.168.2.1/24
-│   └── Wireguard: 192.168.3.1/24
-└── Server2 (10.0.0.20) - Testing Node  
-    ├── IPIP: 192.168.1.2/24
-    ├── GRE: 192.168.2.2/24
-    └── Wireguard: 192.168.3.2/24
+# Wireguard Tunnel
+❌ ISSUE: "Required key not available" - Wireguard keys not properly configured
 ```
 
-#### Forwarding Path
-```
-Server2 [GRE:192.168.2.2] 
-    ↓
-Server1 [GRE:192.168.2.1] → [Forwarding] → [WG:192.168.3.1]
-    ↓
-Server2 [WG:192.168.3.2]
+## Latency Testing Results
 
+### IPIP Tunnel Latency
+```bash
+# ping -c 10 192.168.1.1
+10 packets transmitted, 10 received, 0% packet loss, time 9195ms
+rtt min/avg/max/mdev = 0.561/0.746/1.639/0.309 ms
+```
+
+**IPIP RTT**: 0.561 / 0.746 / 1.639 / 0.309 ms (min/avg/max/mdev)
+
+### GRE Tunnel Latency
+```bash
+# ping -c 10 192.168.2.1
+[PENDING - TO BE CAPTURED]
+```
+
+**GRE RTT**: ___ / ___ / ___ / ___ ms (min/avg/max/mdev)
+
+### Wireguard Tunnel Latency
+```bash
+# ping -c 10 192.168.3.1
+[PENDING - TO BE CAPTURED]
+```
+
+**Wireguard RTT**: ___ / ___ / ___ / ___ ms (min/avg/max/mdev)
+
+### Baseline Latency (Direct Connection)
+```bash
+# ping -c 10 10.0.0.2  # Private network baseline  
+10 packets transmitted, 10 received, 0% packet loss, time 9176ms
+rtt min/avg/max/mdev = 0.533/0.742/2.089/0.452 ms
+```
+
+**Direct Private RTT**: 0.533 / 0.742 / 2.089 / 0.452 ms (min/avg/max/mdev)
+
+```bash
+# ping -c 10 91.98.144.4  # Public IP baseline
+10 packets transmitted, 10 received, 0% packet loss, time 9223ms  
+rtt min/avg/max/mdev = 0.434/0.903/4.116/1.072 ms
+```
+
+**Direct Public RTT**: 0.434 / 0.903 / 4.116 / 1.072 ms (min/avg/max/mdev)
+
+## Throughput Testing Results
+
+### IPIP Tunnel Throughput
+```bash
+# iperf3 -c 192.168.1.1 -t 10 -f M
+[  5]   0.00-10.00  sec  2.32 GBytes   238 MBytes/sec    0            sender
+[  5]   0.00-10.00  sec  2.32 GBytes   237 MBytes/sec                  receiver
+```
+
+**IPIP Throughput**: 
+- Sender: 238 MBytes/sec
+- Receiver: 237 MBytes/sec
+
+### GRE Tunnel Throughput
+```bash
+# iperf3 -c 192.168.2.1 -t 10 -f M
+[PENDING - TO BE CAPTURED]
+```
+
+**GRE Throughput**: 
+- Sender: ___ Mbits/sec
+- Receiver: ___ Mbits/sec
+
+### Wireguard Tunnel Throughput
+```bash
+# iperf3 -c 192.168.3.1 -t 10 -f M
+[PENDING - TO BE CAPTURED]
+```
+
+**Wireguard Throughput**: 
+- Sender: ___ Mbits/sec
+- Receiver: ___ Mbits/sec
+
+### Baseline Throughput (Direct Connection)
+```bash
+# iperf3 -c 10.0.0.2 -t 10 -f M  # Private network baseline
+[  5]   0.00-10.00  sec  8.24 GBytes   843 MBytes/sec  33354            sender
+[  5]   0.00-10.00  sec  8.21 GBytes   841 MBytes/sec                  receiver
+```
+
+**Direct Private Throughput**: 
+- Sender: 843 MBytes/sec  
+- Receiver: 841 MBytes/sec
+
+```bash
+# iperf3 -c 91.98.144.4 -t 10 -f M  # Public IP baseline
+[PENDING - TO BE CAPTURED]
+```
+
+**Direct Public Throughput**: 
+- Sender: ___ Mbits/sec
+- Receiver: ___ Mbits/sec
+
+## Forwarding Path Testing
+
+### GRE → Wireguard Forwarding
+```bash
+# ping -c 10 -I 192.168.2.2 192.168.3.1
+[PENDING - TO BE CAPTURED]
+```
+
+**Forwarding RTT**: ___ / ___ / ___ / ___ ms (min/avg/max/mdev)
+
+## Performance Analysis
+
+### Latency Overhead (vs Private Network Baseline)
+- **IPIP Overhead**: 0.004 ms (+0.5%) - EXCELLENT!
+- **GRE Overhead**: N/A (connection issues)
+- **Wireguard Overhead**: N/A (key configuration issues)
+- **Forwarding Overhead**: N/A (pending GRE/WG fixes)
+
+### Throughput Overhead (vs Private Network Baseline)
+- **IPIP Efficiency**: 28.3% of baseline (238/841 MBytes/sec)
+- **GRE Efficiency**: N/A (connection issues)
+- **Wireguard Efficiency**: N/A (key configuration issues)
+
+### Protocol Comparison
+- **Lowest Latency**: [PENDING]
+- **Highest Throughput**: [PENDING]
+- **Most Efficient**: [PENDING]
+
+## System Resource Usage
+
+### CPU Usage During Tests
+```bash
+# top -p $(pgrep iperf3)
+[PENDING - TO BE CAPTURED]
+```
+
+### Network Interface Statistics
+```bash
+# ip -s link show ipip0
+[PENDING - TO BE CAPTURED]
+
+# ip -s link show gre0
+[PENDING - TO BE CAPTURED]
+
+# ip -s link show wg0
+[PENDING - TO BE CAPTURED]
+```
+
+## Conclusions
+
+[TO BE FILLED AFTER ANALYSIS]
+
+### Key Findings
+- 
+- 
+- 
+
+### Recommendations
+- 
+- 
+- 
+
+---
+*Test results captured automatically via performance testing script*

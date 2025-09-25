@@ -21,14 +21,8 @@
   networking.hostName = "server1";
   networking.hostId = "12345678";
   
-  # Private network interface configuration (Hetzner private network)
-  networking.interfaces.ens10 = {
-    useDHCP = false;
-    ipv4.addresses = [{
-      address = "10.0.0.10";
-      prefixLength = 24;
-    }];
-  };
+  # Private network interface configuration (use DHCP to get Hetzner-assigned IP)
+  networking.interfaces.enp7s0.useDHCP = true;
 
   # Using traditional networking - DHCP will be handled automatically
 
