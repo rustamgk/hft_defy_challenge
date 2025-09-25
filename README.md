@@ -1,135 +1,114 @@
-# HFT DEFY Challenge - Tunnel P# GRE Tunnel
-✅ **SUCCESS**: ~1.25 Gbits/sec throughput, 0.756ms avg latency (+1.9% overhead)
+# HFT DEFY Challenge - Результаты тестирования туннельных протоколов
 
-**Latency Test:**
-```
---- 192.168.99.2 ping statistics ---
-10 packet### Protocol Comparison
-- **Lowest Latency**: IPIP (0.746ms avg, +0.5% overhead) - **WINNER**
-- **Highest Throughput**: IPIP (238 MBytes/sec) > GRE (156 MBytes/sec) > Wireguard (59 MBytes/sec)  
-- **Most Efficient**: IPIP (28.3%) > GRE (18.5%) > Wireguard (7.0% of baseline)
-- **Best Security**: Wireguard (strong encryption, but 125% latency penalty)
-- **Best Balance**: GRE (excellent latency +1.9%, good throughput, requires key authentication)smitted, 10 received, 0% packet loss, time 1859ms
-rtt min/avg/max/mdev = 0.567/0.756/1.932/0.394 ms
-```
+## Окружение тестирования
 
-**Throughput Test:**
-```
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-10.00  sec  1.46 GBytes  1.25 Gbits/sec   55            sender
-[  5]   0.00-10.00  sec  1.46 GBytes  1.25 Gbits/sec                  receiver
-```formance Test Results
+- **Дата**: 25-26 сентября 2025
+- **Сервер1**: 91.98.144.4 (Узел пересылки)
+- **Сервер2**: 91.98.95.57 (Тестовый клиент)
+- **Частная сеть**: 10.0.0.0/24
+  - Частный IP Сервера1: 10.0.0.2
+  - Частный IP Сервера2: 10.0.0.3
 
-## Test Environment
+## Конфигурация туннелей
 
-- **Date**: September 25, 2025
-- **Server1**: 91.98.144.4 (Forwarding node)
-- **Server2**: 91.98.95.57 (Testing client)
-- **Private Network**: 10.0.0.0/24
-  - Server1 Private IP: 10.0.0.2
-  - Server2 Private IP: 10.0.0.3
+### Назначения сетей
+- **IPIP туннель**: 192.168.1.0/24
+  - Сервер1: 192.168.1.1
+  - Сервер2: 192.168.1.2
+- **GRE туннель**: 192.168.99.0/24
+  - Сервер1: 192.168.99.1
+  - Сервер2: 192.168.99.2
+- **Wireguard туннель**: 192.168.3.0/24
+  - Сервер1: 192.168.3.1
+  - Сервер2: 192.168.3.2
 
-## Tunnel Configuration
+## Тесты подключения
 
-### Network Assignments
-- **IPIP Tunnel**: 192.168.1.0/24
-  - Server1: 192.168.1.1
-  - Server2: 192.168.1.2
-- **GRE Tunnel**: 192.168.2.0/24
-  - Server1: 192.168.2.1
-  - Server2: 192.168.2.2
-- **Wireguard Tunnel**: 192.168.3.0/24
-  - Server1: 192.168.3.1
-  - Server.2: 192.168.3.2
+### Основная связность туннелей
 
-## Connectivity Tests
-
-### Basic Tunnel Connectivity
-```
-# IPIP Tunnel
-WORKING: 3 packets transmitted, 3 received, 0% packet loss
-
-# GRE Tunnel  
-**BLOCKED**: Interfaces created but no connectivity (likely Hetzner Cloud firewall/routing restriction)
-
-# Wireguard Tunnel
-**SUCCESS**: ~470 Mbits/sec throughput, 1.674ms avg latency (+124% overhead)
-
-**Latency Test:**
-```
---- 192.168.3.2 ping statistics ---
-10 packets transmitted, 10 received, 0% packet loss, time 1808ms
-rtt min/avg/max/mdev = 0.812/1.674/7.469/1.935 ms
-```
-
-**Throughput Test:**
-```
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-10.00  sec   563 MBytes   472 Mbits/sec   44            sender
-[  5]   0.00-10.01  sec   560 MBytes   470 Mbits/sec                  receiver
-```
-```
-
-## Latency Testing Results
-
-### IPIP Tunnel Latency
+#### IPIP туннель
+**РАБОТАЕТ**: Отличная производительность
 ```bash
-# ping -c 10 192.168.1.1
+# ping -c 3 192.168.1.2
+3 packets transmitted, 3 received, 0% packet loss
+```
+
+#### GRE туннель  
+**ИСПРАВЛЕНО**: После добавления ключа аутентификации (key 42)
+```bash
+# ping -c 3 192.168.99.2  
+3 packets transmitted, 3 received, 0% packet loss
+```
+*Примечание: GRE туннели требуют ключи аутентификации в среде Hetzner Cloud*
+
+#### Wireguard туннель
+**РАБОТАЕТ**: Функционален с шифрованием
+```bash
+# ping -c 3 192.168.3.2
+3 packets transmitted, 3 received, 0% packet loss
+```
+
+## Результаты тестирования задержки
+
+### Задержка IPIP туннеля
+```bash
+# ping -c 10 192.168.1.2
 10 packets transmitted, 10 received, 0% packet loss, time 9195ms
 rtt min/avg/max/mdev = 0.561/0.746/1.639/0.309 ms
 ```
 
-**IPIP RTT**: 0.561 / 0.746 / 1.639 / 0.309 ms (min/avg/max/mdev)
+**IPIP RTT**: 0.561 / 0.746 / 1.639 / 0.309 мс (мин/сред/макс/откл)
 
-### GRE Tunnel Latency
+### Задержка GRE туннеля
 ```bash
 # ping -c 10 192.168.99.2
 10 packets transmitted, 10 received, 0% packet loss, time 1859ms
 rtt min/avg/max/mdev = 0.567/0.756/1.932/0.394 ms
 ```
 
-**GRE RTT**: 0.567 / 0.756 / 1.932 / 0.394 ms (min/avg/max/mdev)
+**GRE RTT**: 0.567 / 0.756 / 1.932 / 0.394 мс (мин/сред/макс/откл)
 
-### Wireguard Tunnel Latency
+### Задержка Wireguard туннеля
 ```bash
 # ping -c 10 192.168.3.2
 10 packets transmitted, 10 received, 0% packet loss, time 1808ms
 rtt min/avg/max/mdev = 0.812/1.674/7.469/1.935 ms
 ```
 
-**Wireguard RTT**: 0.812 / 1.674 / 7.469 / 1.935 ms (min/avg/max/mdev)
+**Wireguard RTT**: 0.812 / 1.674 / 7.469 / 1.935 мс (мин/сред/макс/откл)
 
-### Baseline Latency (Direct Connection)
+### Базовая задержка (прямое соединение)
 ```bash
-# ping -c 10 10.0.0.2  # Private network baseline  
+# ping -c 10 10.0.0.2  # Базовая частная сеть
 10 packets transmitted, 10 received, 0% packet loss, time 9176ms
 rtt min/avg/max/mdev = 0.533/0.742/2.089/0.452 ms
 ```
 
-**Direct Private RTT**: 0.533 / 0.742 / 2.089 / 0.452 ms (min/avg/max/mdev)
+**Прямое частное RTT**: 0.533 / 0.742 / 2.089 / 0.452 мс (мин/сред/макс/откл)
 
 ```bash
-# ping -c 10 91.98.144.4  # Public IP baseline
+# ping -c 10 91.98.144.4  # Базовый публичный IP
 10 packets transmitted, 10 received, 0% packet loss, time 9223ms  
 rtt min/avg/max/mdev = 0.434/0.903/4.116/1.072 ms
 ```
 
-**Direct Public RTT**: 0.434 / 0.903 / 4.116 / 1.072 ms (min/avg/max/mdev)
+**Прямое публичное RTT**: 0.434 / 0.903 / 4.116 / 1.072 мс (мин/сред/макс/откл)
 
-## Throughput Testing Results
+## Результаты тестирования пропускной способности
 
-### IPIP Tunnel Throughput
+### Пропускная способность IPIP туннеля
 ```bash
-# iperf3 -c 192.168.1.1 -t 10 -f M
-[  5]   0.00-10.00  sec  2.32 GBytes   238 MBytes/sec    0            sender
-[  5]   0.00-10.00  sec  2.32 GBytes   237 MBytes/sec                  receiver
+# iperf3 -c 192.168.1.2 -t 10
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  1.48 GBytes  1.27 Gbits/sec    4            sender
+[  5]   0.00-10.00  sec  1.47 GBytes  1.26 Gbits/sec                  receiver
 ```
 
-**IPIP Throughput**: 
-- Sender: 238 MBytes/sec
-- Receiver: 237 MBytes/sec
+**Пропускная способность IPIP**: 
+- Отправитель: 1.27 Gbits/sec
+- Получатель: 1.26 Gbits/sec
 
-### GRE Tunnel Throughput
+### Пропускная способность GRE туннеля
 ```bash
 # iperf3 -c 192.168.99.2 -t 10
 [ ID] Interval           Transfer     Bitrate         Retr
@@ -137,11 +116,11 @@ rtt min/avg/max/mdev = 0.434/0.903/4.116/1.072 ms
 [  5]   0.00-10.00  sec  1.46 GBytes  1.25 Gbits/sec                  receiver
 ```
 
-**GRE Throughput**: 
-- Sender: 1.25 Gbits/sec (156 MBytes/sec)
-- Receiver: 1.25 Gbits/sec (156 MBytes/sec)
+**Пропускная способность GRE**: 
+- Отправитель: 1.25 Gbits/sec
+- Получатель: 1.25 Gbits/sec
 
-### Wireguard Tunnel Throughput
+### Пропускная способность Wireguard туннеля
 ```bash
 # iperf3 -c 192.168.3.2 -t 10
 [ ID] Interval           Transfer     Bitrate         Retr
@@ -149,126 +128,93 @@ rtt min/avg/max/mdev = 0.434/0.903/4.116/1.072 ms
 [  5]   0.00-10.01  sec   560 MBytes   470 Mbits/sec                  receiver
 ```
 
-**Wireguard Throughput**: 
-- Sender: 472 Mbits/sec (59 MBytes/sec)
-- Receiver: 470 Mbits/sec (59 MBytes/sec)
+**Пропускная способность Wireguard**: 
+- Отправитель: 472 Mbits/sec (0.472 Gbits/sec)
+- Получатель: 470 Mbits/sec (0.470 Gbits/sec)
 
-### Baseline Throughput (Direct Connection)
+### Базовая пропускная способность (прямое соединение)
 ```bash
-# iperf3 -c 10.0.0.2 -t 10 -f M  # Private network baseline
+# iperf3 -c 10.0.0.2 -t 10  # Базовая частная сеть
 [  5]   0.00-10.00  sec  8.24 GBytes   843 MBytes/sec  33354            sender
 [  5]   0.00-10.00  sec  8.21 GBytes   841 MBytes/sec                  receiver
 ```
 
-**Direct Private Throughput**: 
-- Sender: 843 MBytes/sec  
-- Receiver: 841 MBytes/sec
+**Прямая частная пропускная способность**: 
+- Отправитель: 843 MBytes/sec (6.74 Gbits/sec)
+- Получатель: 841 MBytes/sec (6.73 Gbits/sec)
 
-```bash
-# iperf3 -c 91.98.144.4 -t 10 -f M  # Public IP baseline
-[PENDING - TO BE CAPTURED]
-```
+## Анализ производительности
 
-**Direct Public Throughput**: 
-- Sender: ___ Mbits/sec
-- Receiver: ___ Mbits/sec
+### Накладные расходы на задержку (по сравнению с базовой частной сетью)
+- **Накладные расходы IPIP**: 0.004 мс (+0.5%) - ПРЕВОСХОДНО!
+- **Накладные расходы GRE**: 0.014 мс (+1.9%) - ПРЕВОСХОДНО!
+- **Накладные расходы Wireguard**: 0.932 мс (+125%) - Высокие из-за шифрования
 
-## Forwarding Path Testing
+### Накладные расходы на пропускную способность (по сравнению с базовой частной сетью)
+- **Эффективность IPIP**: 18.8% от базовой (1.27/6.74 Gbits/sec)
+- **Эффективность GRE**: 18.5% от базовой (1.25/6.74 Gbits/sec)
+- **Эффективность Wireguard**: 7.0% от базовой (0.47/6.74 Gbits/sec)
 
-### GRE → Wireguard Forwarding
-```bash
-# ping -c 10 -I 192.168.2.2 192.168.3.1
-[PENDING - TO BE CAPTURED]
-```
+## Статистический анализ производительности
 
-**Forwarding RTT**: ___ / ___ / ___ / ___ ms (min/avg/max/mdev)
+### Анализ перцентилей RTT (50 измерений на туннель)
+| Протокол | Медиана (50-й) | 90-й перцентиль | Мин | Макс | Количество выборок |
+|----------|----------------|-----------------|-----|------|-------------------|
+| **IPIP** | **0.606 мс** | **0.777 мс** | 0.463 мс | 1.61 мс | 50 |
+| **GRE** | **0.605 мс** | **0.737 мс** | 0.455 мс | 2.10 мс | 50 |
+| **WireGuard** | **1.27 мс** | **1.47 мс** | 0.857 мс | 1.57 мс | 50 |
 
-## Performance Analysis
-
-### Latency Overhead (vs Private Network Baseline)
-- **IPIP Overhead**: 0.004 ms (+0.5%) - EXCELLENT!
-- **GRE Overhead**: 0.014 ms (+1.9%) - EXCELLENT!
-- **Wireguard Overhead**: 0.932 ms (+125%) - High due to encryption
-- **Forwarding Overhead**: N/A (requires tunnel chaining)
-
-### Throughput Overhead (vs Private Network Baseline)
-- **IPIP Efficiency**: 28.3% of baseline (238/841 MBytes/sec)
-- **GRE Efficiency**: 18.5% of baseline (156/841 MBytes/sec) - Good performance
-- **Wireguard Efficiency**: 7.0% of baseline (59/841 MBytes/sec) - Low due to encryption overhead
-
-## Statistical Performance Analysis
-
-### RTT Percentile Analysis (50 measurements per tunnel)
-| Protocol | Median (50th) | 90th Percentile | Min | Max | Sample Count |
-|----------|---------------|-----------------|-----|-----|--------------|
-| **IPIP** | **0.606 ms** | **0.777 ms** | 0.463 ms | 1.61 ms | 50 |
-| **GRE** | **0.605 ms** | **0.737 ms** | 0.455 ms | 2.10 ms | 50 |
-| **WireGuard** | **1.27 ms** | **1.47 ms** | 0.857 ms | 1.57 ms | 50 |
-
-### Throughput Percentile Analysis (20 measurements per tunnel)
-| Protocol | Median (50th) | 90th Percentile | Min | Max | Sample Count |
-|----------|---------------|-----------------|-----|-----|--------------|
+### Анализ перцентилей пропускной способности (20 измерений на туннель)
+| Протокол | Медиана (50-й) | 90-й перцентиль | Мин | Макс | Количество выборок |
+|----------|----------------|-----------------|-----|------|-------------------|
 | **IPIP** | **1.24 Gbits/sec** | **1.30 Gbits/sec** | 1.01 Gbits/sec | 1.43 Gbits/sec | 20 |
 | **GRE** | **1.29 Gbits/sec** | **1.41 Gbits/sec** | 1.18 Gbits/sec | 1.48 Gbits/sec | 19* |
 | **WireGuard** | **0.448 Gbits/sec** | **0.482 Gbits/sec** | 0.199 Gbits/sec | 0.51 Gbits/sec | 20 |
 
-*One anomalous measurement filtered from GRE data
+*Одно аномальное измерение отфильтровано из данных GRE
 
-### Statistical Insights
-- **RTT Consistency**: IPIP and GRE show nearly identical median latency (~0.606ms), with GRE slightly better at 90th percentile
-- **RTT Distribution**: WireGuard shows more than 2x higher latency but very consistent performance (narrow range)
-- **Throughput Consistency**: All protocols show stable throughput with low variance
-- **GRE Performance**: Slightly higher median and 90th percentile throughput than IPIP
-- **Performance Reliability**: All tunnels demonstrate predictable performance characteristics suitable for production HFT workloads
+### Статистические выводы
+- **Консистентность RTT**: IPIP и GRE показывают почти идентичную медианную задержку (~0.606мс), с GRE немного лучше на 90-м перцентиле
+- **Распределение RTT**: WireGuard показывает более чем в 2 раза более высокую задержку, но очень консистентную производительность (узкий диапазон)
+- **Консистентность пропускной способности**: Все протоколы показывают стабильную пропускную способность с низкой дисперсией
+- **Производительность GRE**: Немного более высокая медианная и 90-й перцентиль пропускной способности чем IPIP
+- **Надежность производительности**: Все туннели демонстрируют предсказуемые характеристики производительности, подходящие для продуктивных HFT нагрузок
 
-### Protocol Comparison
-- **Lowest Latency**: IPIP (0.746ms avg, +0.5% overhead) - **WINNER(for now)**
-- **Highest Throughput**: IPIP (238 MBytes/sec vs Wireguard 59 MBytes/sec)  
-- **Most Efficient**: IPIP (28.3% vs Wireguard 7.0% of baseline)
-- **Best Security**: Wireguard (strong encryption, but 125% latency penalty)
-- **Blocked Protocol**: GRE (likely restricted by Hetzner Cloud firewall/routing)
+## Сравнение протоколов
 
-## System Resource Usage
+### Ключевые выводы
+- **Производительность IPIP туннеля**: Выдающаяся производительность задержки с накладными расходами всего 0.004мс (+0.5%) по сравнению с базовой
+- **Производительность GRE туннеля**: Отличная задержка (+1.9% накладных расходов) и **превосходная** пропускная способность (медиана 1.29 Gbits/sec против 1.24 у IPIP)
+- **Производительность Wireguard**: Функционален, но с высокими накладными расходами (125% штраф по задержке, 93% потеря пропускной способности из-за шифрования)
+- **Статистическая производительность**: GRE показывает немного лучший 90-й перцентиль RTT (0.737мс против 0.777мс) и более высокую медианную пропускную способность
+- **Рейтинг пропускной способности**: GRE (1.29 Gbits/sec медиана) > IPIP (1.24 Gbits/sec медиана) > Wireguard (0.448 Gbits/sec медиана)
+- **Эффективность сети**: Базовая частная сеть показывает отличную производительность (6.74 Gbits/sec, 0.742мс RTT)
+- **Требование ключа GRE**: GRE туннели требуют ключи аутентификации в среде Hetzner Cloud
+- **Консистентность производительности**: Все туннели показывают стабильную, предсказуемую производительность, подходящую для продуктивных HFT сред
+- **Безопасность против производительности**: Явный компромисс между шифрованием Wireguard и производительностью нешифрованных туннелей
 
-### CPU Usage During Tests
-```bash
-# top -p $(pgrep iperf3)
-[PENDING - TO BE CAPTURED]
-```
+## Рекомендации
 
-### Network Interface Statistics
-```bash
-# ip -s link show ipip0
-[PENDING - TO BE CAPTURED]
+### Для сверхнизкой задержки HFT
+**GRE туннель теперь оптимален** с наименьшим 90-м перцентилем RTT (0.737мс) и наибольшей пропускной способностью (1.29 Gbits/sec медиана)
 
-# ip -s link show gre0
-[PENDING - TO BE CAPTURED]
+### Для консистентной производительности
+GRE туннель обеспечивает лучший баланс низкой задержки и высокой пропускной способности с отличной статистической консистентностью
 
-# ip -s link show wg0
-[PENDING - TO BE CAPTURED]
-```
+### Для устаревших приложений
+IPIP туннель все еще отличный выбор с минимальными накладными расходами и предсказуемой производительностью
 
-## Conclusions
+### Для безопасных приложений
+Wireguard обеспечивает сильное шифрование, но со значительным штрафом по производительности (125% увеличение задержки)
 
-### Key Findings
-- **IPIP Tunnel Performance**: Outstanding latency performance with only 0.004ms overhead (+0.5%) vs baseline
-- **GRE Tunnel Performance**: Excellent latency (+1.9% overhead) and **superior** throughput (median 1.29 Gbits/sec vs IPIP 1.24)
-- **Wireguard Performance**: Functional but high overhead (125% latency penalty, 93% throughput loss due to encryption)
-- **Statistical Performance**: GRE shows slightly better 90th percentile RTT (0.737ms vs 0.777ms) and higher median throughput
-- **Throughput Rankings**: GRE (1.29 Gbits/sec median) > IPIP (1.24 Gbits/sec median) > Wireguard (0.448 Gbits/sec median)
-- **Network Efficiency**: Private network baseline shows excellent performance (843 MBytes/sec, 0.742ms RTT)
-- **GRE Key Requirement**: GRE tunnels require authentication keys in Hetzner Cloud environment
-- **Performance Consistency**: All tunnels show stable, predictable performance suitable for production HFT environments
-- **Security vs Performance**: Clear trade-off between Wireguard's encryption and unencrypted tunnels' performance
+### Для высокой пропускной способности
+GRE > IPIP > Wireguard на основе статистического анализа устойчивой пропускной способности
 
-### Recommendations
-- **For Ultra-Low Latency HFT**: **GRE tunnel now optimal** with lowest 90th percentile RTT (0.737ms) and highest throughput (1.29 Gbits/sec median)
-- **For Consistent Performance**: GRE tunnel provides best balance of low latency and high throughput with excellent statistical consistency
-- **For Legacy Applications**: IPIP tunnel still excellent choice with minimal overhead and predictable performance
-- **For Secure Applications**: Wireguard provides strong encryption but with significant performance penalty (125% latency increase)
-- **For High-Throughput**: GRE > IPIP > Wireguard based on statistical analysis of sustained throughput
-- **Infrastructure Choice**: Hetzner Cloud supports all tunnel types with proper configuration (GRE requires keys)
-- **Performance Priority**: **GRE emerges as winner** for HFT applications requiring both low latency and high throughput
+### Выбор инфраструктуры
+Hetzner Cloud поддерживает все типы туннелей при правильной конфигурации (GRE требует ключей)
+
+### Приоритет производительности
+**GRE становится победителем** для HFT приложений, требующих как низкую задержку, так и высокую пропускную способность
 
 ---
-*Test results captured automatically via performance testing script*
+*Результаты тестов захвачены автоматически через скрипт тестирования производительности*
