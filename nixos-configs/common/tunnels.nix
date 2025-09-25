@@ -8,6 +8,12 @@ let
   server1_ip = "10.0.0.2";
   server2_ip = "10.0.0.3";
   
+  # WireGuard public keys (captured during manual testing)
+  # server1 (wg show wg0 public-key)
+  server1_pubkey = "NUmfvdMk2ZvJv9hs61VckBQA7NtkOWdUzvaU8ZsvIzs=";
+  # server2 (wg genkey | tee privatekey | wg pubkey)
+  server2_pubkey = "P8QUs08yNTEuvPPBlwcXRJhumthaSyhPVUQktxfLHGs=";
+  
   # Tunnel network ranges
   ipip_network = "192.168.1.0/24";
   gre_network = "192.168.2.0/24";
@@ -43,14 +49,21 @@ in {
     # Private key will be generated per-server
     privateKeyFile = "/etc/wireguard/private.key";
     
+    # Configure a single peer (the opposite server) with precise /32 allowed IPs
     peers = [
-      {
-        # Peer configuration will be set in server-specific configs
-        publicKey = "PLACEHOLDER_PUBLIC_KEY";
-        allowedIPs = [ "192.168.3.0/24" ];
-        endpoint = "${remote_server_ip}:51820";
+      (if isServer1 then {
+        # On server1, peer is server2
+        publicKey = server2_pubkey;
+        allowedIPs = [ "192.168.3.2/32" ];
+        endpoint = "${server2_ip}:51820"; # use private network endpoint
         persistentKeepalive = 25;
-      }
+      } else {
+        # On server2, peer is server1
+        publicKey = server1_pubkey;
+        allowedIPs = [ "192.168.3.1/32" ];
+        endpoint = "${server1_ip}:51820"; # use private network endpoint
+        persistentKeepalive = 25;
+      })
     ];
   };
   
@@ -85,7 +98,7 @@ in {
       ${pkgs.iproute2}/bin/ip tunnel add gre0 mode gre \
         remote ${remote_server_ip} \
         local ${if isServer1 then server1_ip else server2_ip} \
-        ttl 64 || true
+        ttl 64 key 42 || true
         
       ${pkgs.iproute2}/bin/ip addr add ${tunnel_ips.gre}/24 dev gre0 || true
       ${pkgs.iproute2}/bin/ip link set gre0 up || true
@@ -103,7 +116,7 @@ in {
     '';
   };
   
-  # Create Wireguard key generation service
+  # Create Wireguard key generation service (writes /etc/wireguard/private.key and public.key)
   systemd.services."wireguard-key-gen" = {
     description = "Generate Wireguard keys";
     before = [ "wireguard-wg0.service" ];
