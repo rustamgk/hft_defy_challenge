@@ -45,11 +45,11 @@ echo "🚀 Starting NixOS deployment..."
 
 echo ""
 echo "📡 Deploying to Server1 (forwarding node)..."
-nix --extra-experimental-features nix-command --extra-experimental-features flakes run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server1 --target-host root@91.98.144.4
+nix --extra-experimental-features nix-command --extra-experimental-features flakes run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server1 --target-host root@91.98.144.4 -i ~/.ssh/hft_defy
 
 echo ""
 echo "📡 Deploying to Server2 (testing node)..." 
-nix --extra-experimental-features nix-command --extra-experimental-features flakes run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server2 --target-host root@91.98.95.57
+nix --extra-experimental-features nix-command --extra-experimental-features flakes run github:nix-community/nixos-anywhere -- --flake ./nixos-configs#server2 --target-host root@91.98.95.57 -i ~/.ssh/hft_defy
 
 echo " Test tunnel connectivity:"
 echo " ssh -i ~/.ssh/hft_defy root@$SERVER2_IP 'ping -c 3 192.168.1.1'"
