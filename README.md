@@ -1,4 +1,4 @@
-# HFT DEFY Challenge - Tunnel Protocol Performance Test Results
+# Hetzner DE - Tunnel Protocol Performance Test Results
 
 ## Test Environment
 
